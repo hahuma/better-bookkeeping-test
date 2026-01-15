@@ -17,13 +17,24 @@ Once the user hits "complete workout" that workout will be added to their histor
 3. The Workout history should give the user a sense of progression. One way to do this is to show certain summary metrics for each movement and their progression over time. Please implement a chart where a user can select a movement and a corresponding metric and see that metric plotted against time.
    metrics:
    - maximium weight (the maximum weight for that movement on a given day)
-   - total volume (volume of a set is weight \* reps total volume for a movement is total volume of all sets in a workout)
    - total reps
+   - total volume (volume of a set is weight \* reps total volume for a movement is total volume of all sets in a workout)
 
 4. There are no tests! Please create some unit tests for the following core behaviors:
    Movements: create / read / delete
    Sets: create / read / delete
    Workouts: create / read / delete
+
+Stretch Goals open-ended asks - address any or all of these to show of your dev super powers!
+
+- Get creative - how would you add a nutrition tracking to this app? Macros (Carb / Protein / Fats) and Calories & Calory surplus/deficit
+- database design / performance upgrade - let us know what we're doing wrong. Show us how you would tackle harder problems like admin boards to summarize users in the system
+- security audit / improvement - let us know what we're doing wrong. Show us how you would tackle harder problems like account sharing or admin access
+- general UI cleanup / update - the UI here is totally basic. Show us some improvements you'd make to make this app look clean and professional
+
+There will be a code review on what you write! So be prepared to explain how and why you implemented these features!
+
+Please use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) as you're working on this repo
 
 ## Tech Stack
 
