@@ -53,7 +53,6 @@ Please use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/
 
 - Bun runtime installed
 - Better Bookkeeping database access
-- Auth0 configuration
 - Google Drive API credentials
 - Plaid API keys
 - Document parsing service running locally
