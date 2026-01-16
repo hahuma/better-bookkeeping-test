@@ -2,38 +2,35 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getMovementsServerFn } from "@/lib/movements.server";
 import { createMovementServerFn } from "@/lib/movements.server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { movementsQueryOptions } from "./-queries/movements";
 
 export const Route = createFileRoute("/__index/_layout/movements/")({
-  loader: async () => {
-    const movements = await getMovementsServerFn();
-    return { movements };
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(movementsQueryOptions());
   },
   component: MovementsPage,
 });
 
 function MovementsPage() {
-  const { movements: initialMovements } = Route.useLoaderData();
-  const [movements, setMovements] = useState(initialMovements);
+  const queryClient = useQueryClient();
+  const { data: movements } = useSuspenseQuery(movementsQueryOptions());
   const [name, setName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const createMovementMutation = useMutation({
+    mutationFn: (name: string) => createMovementServerFn({ data: { name } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: movementsQueryOptions().queryKey });
+      setName("");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-
-    setIsLoading(true);
-    try {
-      const result = await createMovementServerFn({ data: { name: name.trim() } });
-      if (result.success) {
-        setMovements([...movements, result.movement].sort((a, b) => a.name.localeCompare(b.name)));
-        setName("");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    createMovementMutation.mutate(name.trim());
   };
 
   return (
@@ -52,8 +49,8 @@ function MovementsPage() {
               onChange={(e) => setName(e.target.value)}
               className="flex-1"
             />
-            <Button type="submit" disabled={isLoading || !name.trim()}>
-              {isLoading ? "Adding..." : "Add"}
+            <Button type="submit" disabled={createMovementMutation.isPending || !name.trim()}>
+              {createMovementMutation.isPending ? "Adding..." : "Add"}
             </Button>
           </form>
         </CardContent>
