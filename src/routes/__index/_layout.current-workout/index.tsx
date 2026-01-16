@@ -6,78 +6,70 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import {
   createWorkoutServerFn,
-  getCurrentWorkoutServerFn,
   completeWorkoutServerFn,
   addSetServerFn,
   deleteSetServerFn,
 } from "@/lib/workouts.server";
-import { getMovementsServerFn } from "@/lib/movements.server";
 import { Play, Check, Plus, X } from "lucide-react";
+import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { currentWorkoutQueryOptions, movementsQueryOptions } from "./-queries/current-workout";
 
 export const Route = createFileRoute("/__index/_layout/current-workout/")({
-  loader: async () => {
-    const [workout, movements] = await Promise.all([getCurrentWorkoutServerFn(), getMovementsServerFn()]);
-    return { workout, movements };
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(currentWorkoutQueryOptions()),
+      context.queryClient.ensureQueryData(movementsQueryOptions()),
+    ]);
   },
   component: CurrentWorkoutPage,
 });
 
 function CurrentWorkoutPage() {
-  const { workout: initialWorkout, movements } = Route.useLoaderData();
-  const [workout, setWorkout] = useState(initialWorkout);
-  const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: workout } = useSuspenseQuery(currentWorkoutQueryOptions());
+  const { data: movements } = useSuspenseQuery(movementsQueryOptions());
   const [selectedMovement, setSelectedMovement] = useState("");
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
-  const [isAddingSet, setIsAddingSet] = useState(false);
 
-  const handleStartWorkout = async () => {
-    setIsLoading(true);
-    try {
-      const result = await createWorkoutServerFn();
-      if (result.success) {
-        setWorkout({ ...result.workout, sets: [] });
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const createWorkoutMutation = useMutation({
+    mutationFn: () => createWorkoutServerFn(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions().queryKey });
+    },
+  });
 
-  const handleCompleteWorkout = async () => {
-    setIsLoading(true);
-    try {
-      const result = await completeWorkoutServerFn();
-      if (result.success) {
-        setWorkout(null);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const completeWorkoutMutation = useMutation({
+    mutationFn: () => completeWorkoutServerFn(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions().queryKey });
+    },
+  });
 
-  const handleAddSet = async (e: React.FormEvent) => {
+  const addSetMutation = useMutation({
+    mutationFn: (data: { movementId: string; reps: number; weight: number }) =>
+      addSetServerFn({ data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions().queryKey });
+      setReps("");
+    },
+  });
+
+  const deleteSetMutation = useMutation({
+    mutationFn: (setId: string) => deleteSetServerFn({ data: { setId } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions().queryKey });
+    },
+  });
+
+  const handleAddSet = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedMovement || !reps || !weight) return;
-    setIsAddingSet(true);
-    try {
-      const result = await addSetServerFn({
-        data: { movementId: selectedMovement, reps: parseInt(reps), weight: parseInt(weight) },
-      });
-      if (result.success && result.set && workout) {
-        setWorkout({ ...workout, sets: [...workout.sets, result.set] });
-        setReps("");
-      }
-    } finally {
-      setIsAddingSet(false);
-    }
-  };
-
-  const handleDeleteSet = async (setId: string) => {
-    if (!workout) return;
-    const result = await deleteSetServerFn({ data: { setId } });
-    if (result.success) {
-      setWorkout({ ...workout, sets: workout.sets.filter((s) => s.id !== setId) });
-    }
+    addSetMutation.mutate({
+      movementId: selectedMovement,
+      reps: parseInt(reps),
+      weight: parseInt(weight),
+    });
   };
 
   if (!workout) {
@@ -87,9 +79,9 @@ function CurrentWorkoutPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-slate-500 mb-4">No active workout. Ready to start?</p>
-            <Button onClick={handleStartWorkout} disabled={isLoading} size="lg">
+            <Button onClick={() => createWorkoutMutation.mutate()} disabled={createWorkoutMutation.isPending} size="lg">
               <Play className="w-4 h-4 mr-2" />
-              {isLoading ? "Starting..." : "Start Workout"}
+              {createWorkoutMutation.isPending ? "Starting..." : "Start Workout"}
             </Button>
           </CardContent>
         </Card>
@@ -101,9 +93,9 @@ function CurrentWorkoutPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900">Current Workout</h1>
-        <Button variant="outline" onClick={handleCompleteWorkout} disabled={isLoading}>
+        <Button variant="outline" onClick={() => completeWorkoutMutation.mutate()} disabled={completeWorkoutMutation.isPending}>
           <Check className="w-4 h-4 mr-2" />
-          {isLoading ? "Completing..." : "Complete Workout"}
+          {completeWorkoutMutation.isPending ? "Completing..." : "Complete Workout"}
         </Button>
       </div>
 
@@ -144,9 +136,9 @@ function CurrentWorkoutPage() {
               className="w-24"
               min={1}
             />
-            <Button type="submit" disabled={isAddingSet || !selectedMovement || !reps || !weight} size="sm">
+            <Button type="submit" disabled={addSetMutation.isPending || !selectedMovement || !reps || !weight} size="sm">
               <Plus className="w-4 h-4 mr-1" />
-              {isAddingSet ? "Adding..." : "Add"}
+              {addSetMutation.isPending ? "Adding..." : "Add"}
             </Button>
           </form>
           {workout.sets.length === 0 ? (
@@ -164,7 +156,7 @@ function CurrentWorkoutPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDeleteSet(set.id)}
+                    onClick={() => deleteSetMutation.mutate(set.id)}
                     className="h-8 w-8 text-slate-400">
                     <X className="w-4 h-4" />
                   </Button>
