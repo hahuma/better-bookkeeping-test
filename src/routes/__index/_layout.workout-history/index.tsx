@@ -2,22 +2,30 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getWorkoutHistoryServerFn, deleteWorkoutsServerFn } from "@/lib/workouts.server";
+import { deleteWorkoutsServerFn } from "@/lib/workouts.server";
 import { Trash2 } from "lucide-react";
+import { workoutHistoryQueryOptions } from "./-queries/workout-history";
+import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/__index/_layout/workout-history/")({
-  loader: async () => {
-    const workouts = await getWorkoutHistoryServerFn();
-    return { workouts };
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(workoutHistoryQueryOptions());
   },
   component: WorkoutHistoryPage,
 });
 
 function WorkoutHistoryPage() {
-  const { workouts: initialWorkouts } = Route.useLoaderData();
-  const [workouts, setWorkouts] = useState(initialWorkouts);
+  const queryClient = useQueryClient();
+  const { data: workouts } = useSuspenseQuery(workoutHistoryQueryOptions());
   const [selectedWorkouts, setSelectedWorkouts] = useState<Set<string>>(new Set());
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  const deleteWorkoutsMutation = useMutation({
+    mutationFn: (workoutIds: string[]) => deleteWorkoutsServerFn({ data: { workoutIds } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: workoutHistoryQueryOptions().queryKey });
+      setSelectedWorkouts(new Set());
+    },
+  });
 
   // Get all unique movements across all workouts
   const uniqueMovements = Array.from(
@@ -44,18 +52,9 @@ function WorkoutHistoryPage() {
     }
   };
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedWorkouts.size === 0) return;
-    setIsDeleting(true);
-    try {
-      const result = await deleteWorkoutsServerFn({ data: { workoutIds: Array.from(selectedWorkouts) } });
-      if (result.success) {
-        setWorkouts(workouts.filter((w) => !selectedWorkouts.has(w.id)));
-        setSelectedWorkouts(new Set());
-      }
-    } finally {
-      setIsDeleting(false);
-    }
+    deleteWorkoutsMutation.mutate(Array.from(selectedWorkouts));
   };
 
   return (
@@ -71,9 +70,9 @@ function WorkoutHistoryPage() {
             size="sm"
             variant="destructive"
             onClick={handleDeleteSelected}
-            disabled={isDeleting || selectedWorkouts.size === 0}>
+            disabled={deleteWorkoutsMutation.isPending || selectedWorkouts.size === 0}>
             <Trash2 className="w-4 h-4 mr-2" />
-            {isDeleting ? "Deleting..." : `Delete Selected (${selectedWorkouts.size})`}
+            {deleteWorkoutsMutation.isPending ? "Deleting..." : `Delete Selected (${selectedWorkouts.size})`}
           </Button>
         </CardHeader>
         <CardContent>
