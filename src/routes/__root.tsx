@@ -3,7 +3,7 @@ import { useState } from "react";
 import styles from "../styles.css?url";
 import { type QueryClient } from "@tanstack/react-query";
 import { getUserServerFn } from "@/lib/auth.server";
-import { TanstackDevtools } from "@tanstack/react-devtools";
+import { TanStackDevtools } from "@tanstack/react-devtools";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { useClientConfig } from "@/lib/config.client";
@@ -180,7 +180,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         {children}
         <ToastContainer position="top-right" autoClose={4000} theme="light" />
         {config.environment === "development" && (
-          <TanstackDevtools
+          <TanStackDevtools
             config={{
               position: "bottom-left",
             }}

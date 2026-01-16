@@ -11,7 +11,7 @@ import { z } from "zod";
 import { generateAuthToken } from "@/lib/auth.server";
 
 const createAccountServerFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ email: z.string().email(), name: z.string().min(1), password: z.string().min(6) }))
+  .inputValidator(z.object({ email: z.email(), name: z.string().min(1), password: z.string().min(6) }))
   .handler(async ({ data }: { data: { email: string; name: string; password: string } }) => {
     const { email, name, password } = data;
 
