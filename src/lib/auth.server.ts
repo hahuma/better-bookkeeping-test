@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { hash, verify } from "argon2";
 import { redirect } from "@tanstack/react-router";
 import { getCookie, setCookie, deleteCookie } from "@tanstack/react-start/server";
 import { createMiddleware, createServerFn } from "@tanstack/react-start";
@@ -81,7 +82,12 @@ export const signInServerFn = createServerFn({ method: "POST" })
       where: { email },
     });
 
-    if (!user || user.password !== password) {
+    if (!user) {
+      return { success: false as const, error: "Invalid email or password" };
+    }
+
+    const isValidPassword = await verify(user.password, password);
+    if (!isValidPassword) {
       return { success: false as const, error: "Invalid email or password" };
     }
 
@@ -108,8 +114,9 @@ export const createAccountServerFn = createServerFn({ method: "POST" })
       return { success: false as const, error: "An account with this email already exists" };
     }
 
+    const hashedPassword = await hash(password);
     const user = await prisma.user.create({
-      data: { email, name, password },
+      data: { email, name, password: hashedPassword },
     });
 
     setSessionCookie(user.id);
