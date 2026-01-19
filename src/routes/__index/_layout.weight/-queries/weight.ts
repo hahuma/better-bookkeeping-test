@@ -1,14 +1,14 @@
 import { getWeightHistoryServerFn, getWeightUnitServerFn } from "@/lib/weight.server";
 import { queryOptions } from "@tanstack/react-query";
 
-export const weightHistoryQueryOptions = () =>
+export const weightHistoryQueryOptions = (userId: string) =>
   queryOptions({
-    queryKey: ["weightHistory"],
+    queryKey: ["weightHistory", userId],
     queryFn: () => getWeightHistoryServerFn(),
   });
 
-export const weightUnitQueryOptions = () =>
+export const weightUnitQueryOptions = (userId: string) =>
   queryOptions({
-    queryKey: ["weightUnit"],
+    queryKey: ["weightUnit", userId],
     queryFn: () => getWeightUnitServerFn(),
   });

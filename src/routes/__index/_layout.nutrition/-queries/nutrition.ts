@@ -1,14 +1,14 @@
 import { getFoodEntriesServerFn, getDailyNutritionServerFn } from "@/lib/nutrition.server";
 import { queryOptions } from "@tanstack/react-query";
 
-export const foodEntriesQueryOptions = () =>
+export const foodEntriesQueryOptions = (userId: string) =>
   queryOptions({
-    queryKey: ["foodEntries"],
+    queryKey: ["foodEntries", userId],
     queryFn: () => getFoodEntriesServerFn(),
   });
 
-export const dailyNutritionQueryOptions = (date: string) =>
+export const dailyNutritionQueryOptions = (userId: string, date: string) =>
   queryOptions({
-    queryKey: ["dailyNutrition", date],
+    queryKey: ["dailyNutrition", userId, date],
     queryFn: () => getDailyNutritionServerFn({ data: { date } }),
   });

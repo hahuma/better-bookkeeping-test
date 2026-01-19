@@ -3,26 +3,26 @@ import { getMovementsServerFn } from "@/lib/movements.server";
 import { getLatestWeightServerFn, getWeightUnitServerFn } from "@/lib/weight.server";
 import { queryOptions } from "@tanstack/react-query";
 
-export const currentWorkoutQueryOptions = () =>
+export const currentWorkoutQueryOptions = (userId: string) =>
   queryOptions({
-    queryKey: ["current-workout"],
+    queryKey: ["current-workout", userId],
     queryFn: () => getCurrentWorkoutServerFn(),
   });
 
-export const movementsQueryOptions = () =>
+export const movementsQueryOptions = (userId: string) =>
   queryOptions({
-    queryKey: ["movements"],
+    queryKey: ["movements", userId],
     queryFn: () => getMovementsServerFn(),
   });
 
-export const latestWeightQueryOptions = () =>
+export const latestWeightQueryOptions = (userId: string) =>
   queryOptions({
-    queryKey: ["latestWeight"],
+    queryKey: ["latestWeight", userId],
     queryFn: () => getLatestWeightServerFn(),
   });
 
-export const weightUnitQueryOptions = () =>
+export const weightUnitQueryOptions = (userId: string) =>
   queryOptions({
-    queryKey: ["weightUnit"],
+    queryKey: ["weightUnit", userId],
     queryFn: () => getWeightUnitServerFn(),
   });
