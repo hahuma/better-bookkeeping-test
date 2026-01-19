@@ -79,15 +79,15 @@ function WeightPage() {
     }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Weight Tracking</h1>
-        <div className="flex gap-1 rounded-lg border border-slate-200 p-1">
+    <div className="max-w-2xl mx-auto space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-xl font-semibold text-text-primary">Weight Tracking</h1>
+        <div className="flex gap-0.5 rounded-lg border border-border p-0.5 bg-surface-elevated">
           <button
             type="button"
             onClick={() => updateUnitMutation.mutate("lbs")}
             data-state={weightUnit === "lbs" ? "on" : "off"}
-            className="px-3 py-1 text-sm font-medium rounded-md transition-colors data-[state=on]:bg-slate-900 data-[state=on]:text-white data-[state=off]:text-slate-600 data-[state=off]:hover:bg-slate-100"
+            className="px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 data-[state=on]:bg-primary data-[state=on]:text-white data-[state=off]:text-text-muted data-[state=off]:hover:text-text-secondary"
           >
             lbs
           </button>
@@ -95,7 +95,7 @@ function WeightPage() {
             type="button"
             onClick={() => updateUnitMutation.mutate("kg")}
             data-state={weightUnit === "kg" ? "on" : "off"}
-            className="px-3 py-1 text-sm font-medium rounded-md transition-colors data-[state=on]:bg-slate-900 data-[state=on]:text-white data-[state=off]:text-slate-600 data-[state=off]:hover:bg-slate-100"
+            className="px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 data-[state=on]:bg-primary data-[state=on]:text-white data-[state=off]:text-text-muted data-[state=off]:hover:text-text-secondary"
           >
             kg
           </button>
@@ -107,7 +107,7 @@ function WeightPage() {
           <CardTitle>Record Weight</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex gap-3">
+          <form onSubmit={handleSubmit} className="flex gap-2">
             <div className="relative flex-1">
               <Input
                 type="number"
@@ -118,12 +118,12 @@ function WeightPage() {
                 onChange={(e) => setWeight(e.target.value)}
                 className="pr-12"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-muted">
                 {weightUnit}
               </span>
             </div>
-            <Button type="submit" disabled={!weight || parseFloat(weight) <= 0}>
-              <Scale className="w-4 h-4 mr-2" />
+            <Button type="submit" disabled={!weight || parseFloat(weight) <= 0} size="sm">
+              <Scale className="w-4 h-4" />
               {recordWeightMutation.isPending ? "Recording..." : "Record"}
             </Button>
           </form>
@@ -133,35 +133,44 @@ function WeightPage() {
       {entries.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Progress Chart</CardTitle>
+            <CardTitle>Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <div data-testid="weight-chart" className="h-64">
+            <div data-testid="weight-chart" className="h-52">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#64748b" />
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="oklch(25% 0.01 250)" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: "oklch(45% 0.01 250)" }}
+                    stroke="oklch(25% 0.01 250)"
+                    tickLine={false}
+                  />
                   <YAxis
                     domain={["dataMin - 5", "dataMax + 5"]}
-                    tick={{ fontSize: 12 }}
-                    stroke="#64748b"
+                    tick={{ fontSize: 11, fill: "oklch(45% 0.01 250)" }}
+                    stroke="oklch(25% 0.01 250)"
+                    tickLine={false}
                     tickFormatter={(value) => `${value}`}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#fff",
-                      border: "1px solid #e2e8f0",
+                      backgroundColor: "oklch(16% 0.012 250)",
+                      border: "1px solid oklch(25% 0.01 250)",
                       borderRadius: "8px",
+                      color: "oklch(95% 0.01 80)",
+                      fontSize: "12px",
                     }}
+                    labelStyle={{ color: "oklch(65% 0.01 250)" }}
                     formatter={(value) => [`${value} ${weightUnit}`, "Weight"]}
                   />
                   <Line
                     type="monotone"
                     dataKey="weight"
-                    stroke="#0f172a"
+                    stroke="oklch(65% 0.18 25)"
                     strokeWidth={2}
-                    dot={{ fill: "#0f172a", strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: "#0f172a" }}
+                    dot={{ fill: "oklch(65% 0.18 25)", strokeWidth: 0, r: 3 }}
+                    activeDot={{ r: 5, fill: "oklch(65% 0.18 25)", stroke: "oklch(95% 0.01 80)", strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -172,47 +181,44 @@ function WeightPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Weight History</CardTitle>
+          <CardTitle>History</CardTitle>
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
-            <p className="text-sm text-slate-500">No weight entries yet. Record your first entry above!</p>
+            <p className="text-sm text-text-muted text-center py-4">No weight entries yet. Record your first entry above!</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-5 px-5">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-3 px-4 font-medium text-slate-600">Date</th>
-                    <th className="text-right py-3 px-4 font-medium text-slate-600">
+                  <tr className="border-b border-border-subtle">
+                    <th className="text-left py-2 px-3 text-xs font-medium text-text-muted">Date</th>
+                    <th className="text-right py-2 px-3 text-xs font-medium text-text-muted">
                       Weight ({weightUnit})
                     </th>
-                    <th className="text-left py-3 px-4 font-medium text-slate-600">Note</th>
-                    <th className="py-3 px-4"></th>
+                    <th className="py-2 px-3 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {entries.map((entry) => (
-                    <tr key={entry.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4 text-slate-500">
+                    <tr key={entry.id} className="border-b border-border-subtle hover:bg-surface-elevated transition-colors">
+                      <td className="py-2.5 px-3 text-text-secondary text-xs">
                         {new Date(entry.recordedAt).toLocaleDateString("en-US", {
                           weekday: "short",
                           month: "short",
                           day: "numeric",
-                          year: "numeric",
                         })}
                       </td>
-                      <td className="py-3 px-4 text-right font-medium text-slate-900">
+                      <td className="py-2.5 px-3 text-right font-mono text-primary font-medium">
                         {convertWeight(entry.weight, entry.unit, weightUnit)}
                       </td>
-                      <td className="py-3 px-4 text-slate-500">{entry.note || "-"}</td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-2.5 px-3 text-right">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => deleteEntryMutation.mutate(entry.id)}
-                          className="text-slate-400 hover:text-red-600"
+                          className="h-6 w-6 text-text-muted hover:text-destructive"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                           <span className="sr-only">Delete</span>
                         </Button>
                       </td>

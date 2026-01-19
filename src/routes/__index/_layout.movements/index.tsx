@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { createMovementServerFn, updateMovementServerFn, deleteMovementServerFn } from "@/lib/movements.server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -73,54 +74,51 @@ function MovementsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-slate-900">Movements</h1>
+    <div className="max-w-lg mx-auto space-y-5">
+      <h1 className="text-xl font-semibold text-text-primary">Movements</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>Add New Movement</CardTitle>
+          <CardTitle>Add Movement</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Input
                 placeholder="Movement name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="flex-1"
               />
-              <Button type="submit" disabled={!name.trim()}>
+              <Button type="submit" disabled={!name.trim()} size="sm">
                 {createMovementMutation.isPending ? "Adding..." : "Add"}
               </Button>
             </div>
-            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isBodyWeight}
-                onChange={(e) => setIsBodyWeight(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-              />
-              Body-weight exercise
-            </label>
+            <Checkbox
+              checked={isBodyWeight}
+              onChange={(e) => setIsBodyWeight(e.target.checked)}
+              label="Body-weight"
+            />
           </form>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>All Movements</CardTitle>
         </CardHeader>
         <CardContent>
           {movements.length === 0 ? (
-            <p className="text-sm text-slate-500">No movements yet. Add one above!</p>
+            <p className="text-sm text-text-muted text-center py-4">No movements yet. Add one above!</p>
           ) : (
             <ul className="space-y-2">
               {movements.map((movement) => (
                 <li
                   key={movement.id}
-                  className="px-3 py-2 bg-slate-50 rounded-lg text-sm font-medium text-slate-700"
+                  className="p-3 bg-surface-elevated rounded-lg border border-border-subtle hover:border-border transition-colors"
                 >
                   {editingId === movement.id ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex gap-2">
                         <Input
                           value={editName}
@@ -128,52 +126,48 @@ function MovementsPage() {
                           className="flex-1"
                           aria-label="Name"
                         />
-                        <Button size="sm" onClick={saveEdit} disabled={!editName.trim()}>
+                        <Button size="icon" onClick={saveEdit} disabled={!editName.trim()} className="h-9 w-9">
                           <Check className="w-4 h-4" />
                           <span className="sr-only">Save</span>
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                        <Button size="icon" variant="ghost" onClick={cancelEdit} className="h-9 w-9">
                           <X className="w-4 h-4" />
                           <span className="sr-only">Cancel</span>
                         </Button>
                       </div>
-                      <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={editIsBodyWeight}
-                          onChange={(e) => setEditIsBodyWeight(e.target.checked)}
-                          className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-                        />
-                        Body-weight exercise
-                      </label>
+                      <Checkbox
+                        checked={editIsBodyWeight}
+                        onChange={(e) => setEditIsBodyWeight(e.target.checked)}
+                        label="Body-weight"
+                      />
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span>{movement.name}</span>
+                        <span className="text-sm font-medium text-text-primary">{movement.name}</span>
                         {movement.isBodyWeight && (
-                          <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-600 rounded">
+                          <span className="px-1.5 py-0.5 text-[10px] font-medium bg-primary-muted text-primary rounded">
                             BW
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
                           onClick={() => startEdit(movement)}
-                          className="text-slate-400 hover:text-slate-600"
+                          className="h-7 w-7 text-text-muted hover:text-text-primary"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="w-3.5 h-3.5" />
                           <span className="sr-only">Edit</span>
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
                           onClick={() => deleteMovementMutation.mutate(movement.id)}
-                          className="text-slate-400 hover:text-red-600"
+                          className="h-7 w-7 text-text-muted hover:text-destructive"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                           <span className="sr-only">Delete</span>
                         </Button>
                       </div>
