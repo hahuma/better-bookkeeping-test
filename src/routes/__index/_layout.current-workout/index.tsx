@@ -17,21 +17,22 @@ import { currentWorkoutQueryOptions, movementsQueryOptions, latestWeightQueryOpt
 export const Route = createFileRoute("/__index/_layout/current-workout/")({
   loader: async ({ context }) => {
     await Promise.all([
-      context.queryClient.ensureQueryData(currentWorkoutQueryOptions()),
-      context.queryClient.ensureQueryData(movementsQueryOptions()),
-      context.queryClient.ensureQueryData(latestWeightQueryOptions()),
-      context.queryClient.ensureQueryData(weightUnitQueryOptions()),
+      context.queryClient.ensureQueryData(currentWorkoutQueryOptions(context.user.id)),
+      context.queryClient.ensureQueryData(movementsQueryOptions(context.user.id)),
+      context.queryClient.ensureQueryData(latestWeightQueryOptions(context.user.id)),
+      context.queryClient.ensureQueryData(weightUnitQueryOptions(context.user.id)),
     ]);
   },
   component: CurrentWorkoutPage,
 });
 
 function CurrentWorkoutPage() {
+  const { user } = Route.useRouteContext();
   const queryClient = useQueryClient();
-  const { data: workout } = useSuspenseQuery(currentWorkoutQueryOptions());
-  const { data: movements } = useSuspenseQuery(movementsQueryOptions());
-  const { data: latestWeight } = useSuspenseQuery(latestWeightQueryOptions());
-  const { data: weightUnit } = useSuspenseQuery(weightUnitQueryOptions());
+  const { data: workout } = useSuspenseQuery(currentWorkoutQueryOptions(user.id));
+  const { data: movements } = useSuspenseQuery(movementsQueryOptions(user.id));
+  const { data: latestWeight } = useSuspenseQuery(latestWeightQueryOptions(user.id));
+  const { data: weightUnit } = useSuspenseQuery(weightUnitQueryOptions(user.id));
   const [selectedMovement, setSelectedMovement] = useState("");
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
@@ -60,14 +61,14 @@ function CurrentWorkoutPage() {
   const createWorkoutMutation = useMutation({
     mutationFn: () => createWorkoutServerFn(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions(user.id).queryKey });
     },
   });
 
   const completeWorkoutMutation = useMutation({
     mutationFn: () => completeWorkoutServerFn(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions(user.id).queryKey });
     },
   });
 
@@ -75,16 +76,21 @@ function CurrentWorkoutPage() {
     mutationFn: (data: { movementId: string; reps: number; weight: number }) =>
       addSetServerFn({ data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions(user.id).queryKey });
       setReps("");
-      setWeight("");
+      // Reset weight based on movement type
+      if (isBodyWeightMovement && latestWeight) {
+        setWeight(String(Math.round(latestWeight.weight)));
+      } else {
+        setWeight("");
+      }
     },
   });
 
   const deleteSetMutation = useMutation({
     mutationFn: (setId: string) => deleteSetServerFn({ data: { setId } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions(user.id).queryKey });
     },
   });
 
@@ -94,7 +100,7 @@ function CurrentWorkoutPage() {
     addSetMutation.mutate({
       movementId: selectedMovement,
       reps: parseInt(reps),
-      weight: parseInt(weight),
+      weight: parseFloat(weight),
     });
   };
 
@@ -178,6 +184,7 @@ function CurrentWorkoutPage() {
                 <label className="block text-xs text-text-muted mb-1.5">Weight ({weightUnit})</label>
                 <Input
                   type="number"
+                  step="0.1"
                   placeholder="Weight"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
@@ -256,6 +263,7 @@ function CurrentWorkoutPage() {
                     variant="ghost"
                     size="icon"
                     onClick={() => deleteSetMutation.mutate(set.id)}
+                    disabled={deleteSetMutation.isPending}
                     className="h-7 w-7 text-text-muted hover:text-destructive flex-shrink-0"
                   >
                     <X className="w-4 h-4" />
