@@ -2,11 +2,11 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createMovementServerFn, updateMovementServerFn } from "@/lib/movements.server";
+import { createMovementServerFn, updateMovementServerFn, deleteMovementServerFn } from "@/lib/movements.server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { movementsQueryOptions } from "./-queries/movements";
-import { Pencil, Check, X } from "lucide-react";
+import { Pencil, Check, X, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/__index/_layout/movements/")({
   loader: async ({ context }) => {
@@ -39,6 +39,13 @@ function MovementsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: movementsQueryOptions().queryKey });
       setEditingId(null);
+    },
+  });
+
+  const deleteMovementMutation = useMutation({
+    mutationFn: (id: string) => deleteMovementServerFn({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: movementsQueryOptions().queryKey });
     },
   });
 
@@ -150,15 +157,26 @@ function MovementsPage() {
                           </span>
                         )}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEdit(movement)}
-                        className="text-slate-400 hover:text-slate-600"
-                      >
-                        <Pencil className="w-4 h-4" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEdit(movement)}
+                          className="text-slate-400 hover:text-slate-600"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => deleteMovementMutation.mutate(movement.id)}
+                          className="text-slate-400 hover:text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </li>
