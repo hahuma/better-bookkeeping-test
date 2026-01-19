@@ -7,8 +7,16 @@ import { sessionCookieName } from "./auth.consts";
 import { getServerSidePrismaClient } from "./db.server";
 import { z } from "zod";
 
-// In production, use a proper secret from environment variables
-const COOKIE_SECRET = process.env.COOKIE_SECRET || "dev-secret-change-in-production";
+// Cookie secret must be set in production
+function getCookieSecret(): string {
+  const secret = process.env.COOKIE_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("COOKIE_SECRET environment variable is required in production");
+  }
+  return secret || "dev-secret-change-in-production";
+}
+
+const COOKIE_SECRET = getCookieSecret();
 
 /**
  * Signs a user ID to create a tamper-proof session token
@@ -20,13 +28,20 @@ function signUserId(userId: string): string {
 
 /**
  * Verifies a signed session token and returns the user ID if valid
+ * Uses timing-safe comparison to prevent timing attacks
  */
 function verifySessionToken(token: string): string | null {
   const [userId, signature] = token.split(".");
   if (!userId || !signature) return null;
 
   const expectedSignature = crypto.createHmac("sha256", COOKIE_SECRET).update(userId).digest("hex");
-  if (signature !== expectedSignature) return null;
+
+  // Use timing-safe comparison to prevent timing attacks
+  const signatureBuffer = Buffer.from(signature, "hex");
+  const expectedBuffer = Buffer.from(expectedSignature, "hex");
+
+  if (signatureBuffer.length !== expectedBuffer.length) return null;
+  if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
 
   return userId;
 }
