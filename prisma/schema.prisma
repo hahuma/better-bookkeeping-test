@@ -60,3 +60,13 @@ model WeightEntry {
 
   @@index([userId, recordedAt])
 }
+
+model LoginAttempt {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  attempts  Int      @default(0)
+  lockedAt  DateTime?
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}

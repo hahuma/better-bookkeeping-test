@@ -5,6 +5,7 @@ import { getCookie, setCookie, deleteCookie } from "@tanstack/react-start/server
 import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { sessionCookieName } from "./auth.consts";
 import { getServerSidePrismaClient } from "./db.server";
+import { checkRateLimit, recordFailedAttempt, resetAttempts } from "./rate-limit.server";
 import { z } from "zod";
 
 // Cookie secret must be set in production
@@ -99,11 +100,22 @@ export const getUserServerFn = createServerFn().handler(async () => {
 
 /**
  * Signs in a user with email and password
+ * Rate limited: 5 failed attempts triggers 15-minute lockout
  */
 export const signInServerFn = createServerFn({ method: "POST" })
   .inputValidator(z.object({ email: z.string().email(), password: z.string() }))
   .handler(async ({ data }: { data: { email: string; password: string } }) => {
     const { email, password } = data;
+
+    // Check rate limit before processing
+    const rateLimitResult = await checkRateLimit(email);
+    if (!rateLimitResult.allowed) {
+      const retryMinutes = Math.ceil(rateLimitResult.retryAfterMs / 60000);
+      return {
+        success: false as const,
+        error: `Too many login attempts. Please try again in ${retryMinutes} minute${retryMinutes === 1 ? "" : "s"}.`,
+      };
+    }
 
     const prisma = await getServerSidePrismaClient();
     const user = await prisma.user.findUnique({
@@ -111,14 +123,25 @@ export const signInServerFn = createServerFn({ method: "POST" })
     });
 
     if (!user) {
+      // Record failed attempt even for non-existent users (prevents enumeration)
+      await recordFailedAttempt(email);
       return { success: false as const, error: "Invalid email or password" };
     }
 
     const isValidPassword = await verify(user.password, password);
     if (!isValidPassword) {
+      const result = await recordFailedAttempt(email);
+      if (result.locked) {
+        return {
+          success: false as const,
+          error: "Too many login attempts. Please try again in 15 minutes.",
+        };
+      }
       return { success: false as const, error: "Invalid email or password" };
     }
 
+    // Successful login - reset attempts
+    await resetAttempts(email);
     setSessionCookie(user.id);
 
     return { success: true as const };
