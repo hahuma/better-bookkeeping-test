@@ -20,6 +20,7 @@ model User {
   updatedAt     DateTime      @updatedAt
   password      String
   weightUnit    WeightUnit    @default(lbs)
+  calorieGoal   Int?
   workouts      Workout[]
   weightEntries WeightEntry[]
   movements     Movement[]

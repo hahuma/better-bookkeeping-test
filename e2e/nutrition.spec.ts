@@ -208,4 +208,77 @@ test.describe("Nutrition Tracking", () => {
       await expect(authenticatedPage.getByRole("heading", { name: "Nutrition Tracking" })).toBeVisible();
     });
   });
+
+  test.describe("calorie goal", () => {
+    test("should set a calorie goal", async ({ authenticatedPage }) => {
+      await authenticatedPage.goto("/nutrition");
+      await authenticatedPage.waitForLoadState("networkidle");
+
+      // Set calorie goal
+      await authenticatedPage.getByPlaceholder("kcal").fill("2000");
+      await authenticatedPage.getByRole("button", { name: "Set" }).click();
+
+      // Wait for success indicator
+      await expect(authenticatedPage.locator("svg.text-emerald-400")).toBeVisible();
+    });
+
+    test("should show calorie deficit when under goal", async ({ authenticatedPage }) => {
+      await authenticatedPage.goto("/nutrition");
+      await authenticatedPage.waitForLoadState("networkidle");
+
+      // Set calorie goal first
+      await authenticatedPage.getByPlaceholder("kcal").fill("2000");
+      await authenticatedPage.getByRole("button", { name: "Set" }).click();
+      await expect(authenticatedPage.locator("svg.text-emerald-400")).toBeVisible();
+
+      // Log food entry (500 calories - under goal)
+      await authenticatedPage.getByPlaceholder("Calories").fill("500");
+      await authenticatedPage.getByPlaceholder("Protein").fill("30");
+      await authenticatedPage.getByPlaceholder("Carbs").fill("50");
+      await authenticatedPage.getByPlaceholder("Fat").fill("20");
+      await authenticatedPage.getByRole("button", { name: "Log Food" }).click();
+      await expect(authenticatedPage.getByText("500 kcal")).toBeVisible();
+
+      // Should show deficit (2000 - 500 = 1500 deficit)
+      await expect(authenticatedPage.getByTestId("calorie-balance")).toContainText("1500 deficit");
+    });
+
+    test("should show calorie surplus when over goal", async ({ authenticatedPage }) => {
+      await authenticatedPage.goto("/nutrition");
+      await authenticatedPage.waitForLoadState("networkidle");
+
+      // Set calorie goal
+      await authenticatedPage.getByPlaceholder("kcal").fill("1000");
+      await authenticatedPage.getByRole("button", { name: "Set" }).click();
+      await expect(authenticatedPage.locator("svg.text-emerald-400")).toBeVisible();
+
+      // Log food entry exceeding goal
+      await authenticatedPage.getByPlaceholder("Calories").fill("1500");
+      await authenticatedPage.getByPlaceholder("Protein").fill("50");
+      await authenticatedPage.getByPlaceholder("Carbs").fill("100");
+      await authenticatedPage.getByPlaceholder("Fat").fill("60");
+      await authenticatedPage.getByRole("button", { name: "Log Food" }).click();
+      await expect(authenticatedPage.getByText("1500 kcal")).toBeVisible();
+
+      // Should show surplus (1500 - 1000 = 500 surplus)
+      await expect(authenticatedPage.getByTestId("calorie-balance")).toContainText("+500 surplus");
+    });
+
+    test("should persist calorie goal across page reloads", async ({ authenticatedPage }) => {
+      await authenticatedPage.goto("/nutrition");
+      await authenticatedPage.waitForLoadState("networkidle");
+
+      // Set calorie goal
+      await authenticatedPage.getByPlaceholder("kcal").fill("2500");
+      await authenticatedPage.getByRole("button", { name: "Set" }).click();
+      await expect(authenticatedPage.locator("svg.text-emerald-400")).toBeVisible();
+
+      // Reload page
+      await authenticatedPage.reload();
+      await authenticatedPage.waitForLoadState("networkidle");
+
+      // Goal should persist
+      await expect(authenticatedPage.getByPlaceholder("kcal")).toHaveValue("2500");
+    });
+  });
 });

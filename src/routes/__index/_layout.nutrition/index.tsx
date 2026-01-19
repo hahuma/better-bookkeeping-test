@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
-import { createFoodEntryServerFn, deleteFoodEntryServerFn } from "@/lib/nutrition.server";
-import { Apple, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { createFoodEntryServerFn, deleteFoodEntryServerFn, updateCalorieGoalServerFn } from "@/lib/nutrition.server";
+import { Apple, Trash2, ChevronLeft, ChevronRight, Target, Check } from "lucide-react";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { foodEntriesQueryOptions } from "./-queries/nutrition";
+import { foodEntriesQueryOptions, calorieGoalQueryOptions } from "./-queries/nutrition";
 import { aggregateDailyMacros, calculateDailyTotals, getMealTypeLabel } from "./-utils/nutrition-data";
 import {
   LineChart,
@@ -24,7 +24,10 @@ import {
 
 export const Route = createFileRoute("/__index/_layout/nutrition/")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(foodEntriesQueryOptions(context.user.id));
+    await Promise.all([
+      context.queryClient.ensureQueryData(foodEntriesQueryOptions(context.user.id)),
+      context.queryClient.ensureQueryData(calorieGoalQueryOptions(context.user.id)),
+    ]);
   },
   component: NutritionPage,
 });
@@ -35,6 +38,7 @@ function NutritionPage() {
   const { user } = Route.useRouteContext();
   const queryClient = useQueryClient();
   const { data: entries } = useSuspenseQuery(foodEntriesQueryOptions(user.id));
+  const { data: calorieGoal } = useSuspenseQuery(calorieGoalQueryOptions(user.id));
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   // Form state
@@ -44,6 +48,10 @@ function NutritionPage() {
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
   const [note, setNote] = useState("");
+
+  // Calorie goal state
+  const [goalInput, setGoalInput] = useState(calorieGoal?.toString() ?? "");
+  const [goalSuccess, setGoalSuccess] = useState(false);
 
   // Chart range state
   const [daysRange, setDaysRange] = useState<7 | 30>(7);
@@ -70,6 +78,22 @@ function NutritionPage() {
       queryClient.invalidateQueries({ queryKey: foodEntriesQueryOptions(user.id).queryKey });
     },
   });
+
+  const updateGoalMutation = useMutation({
+    mutationFn: (goal: number | null) => updateCalorieGoalServerFn({ data: { calorieGoal: goal } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: calorieGoalQueryOptions(user.id).queryKey });
+      setGoalSuccess(true);
+      setTimeout(() => setGoalSuccess(false), 2000);
+    },
+  });
+
+  const handleGoalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = goalInput ? parseInt(goalInput) : null;
+    if (goalInput && (isNaN(parsed!) || parsed! < 0)) return;
+    updateGoalMutation.mutate(parsed);
+  };
 
   const resetForm = () => {
     setCalories("");
@@ -251,7 +275,7 @@ function NutritionPage() {
         <CardHeader>
           <CardTitle>Daily Summary</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-4 gap-3">
             <div className="text-center p-3 bg-surface-elevated rounded-lg">
               <p className="text-xs text-text-muted mb-1">Calories</p>
@@ -277,6 +301,62 @@ function NutritionPage() {
                 {dailyTotals.fat.toFixed(0)}g
               </p>
             </div>
+          </div>
+
+          {/* Calorie Goal & Surplus/Deficit */}
+          <div className="border-t border-border-subtle pt-4">
+            <form onSubmit={handleGoalSubmit} className="flex items-center gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                <Target className="w-4 h-4 text-text-secondary" />
+                <span className="text-sm text-text-primary">Daily Goal:</span>
+                <div className="relative w-24">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="10000"
+                    placeholder="kcal"
+                    value={goalInput}
+                    onChange={(e) => setGoalInput(e.target.value)}
+                    className="pr-10 h-8 text-sm"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-text-secondary">kcal</span>
+                </div>
+                <Button
+                  type="submit"
+                  size="sm"
+                  variant="ghost"
+                  disabled={updateGoalMutation.isPending}
+                  className="h-8 px-2 text-text-primary"
+                >
+                  {goalSuccess ? <Check className="w-4 h-4 text-emerald-400" /> : "Set"}
+                </Button>
+              </div>
+
+              {calorieGoal && (
+                <div className="text-right">
+                  {(() => {
+                    const diff = dailyTotals.calories - calorieGoal;
+                    const isDeficit = diff < 0;
+                    const isSurplus = diff > 0;
+                    return (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-text-secondary">
+                          {dailyTotals.calories} / {calorieGoal}
+                        </span>
+                        <span
+                          data-testid="calorie-balance"
+                          className={`text-sm font-semibold ${
+                            isDeficit ? "text-emerald-400" : isSurplus ? "text-red-400" : "text-text-primary"
+                          }`}
+                        >
+                          {isDeficit ? `${Math.abs(diff)} deficit` : isSurplus ? `+${diff} surplus` : "On target"}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </form>
           </div>
         </CardContent>
       </Card>

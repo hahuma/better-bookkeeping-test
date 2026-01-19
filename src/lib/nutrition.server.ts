@@ -109,3 +109,26 @@ export const getDailyNutritionServerFn = createServerFn()
 
     return { entries, totals };
   });
+
+export const getCalorieGoalServerFn = createServerFn()
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const prisma = await getServerSidePrismaClient();
+    const user = await prisma.user.findUnique({
+      where: { id: context.user.id },
+      select: { calorieGoal: true },
+    });
+    return user?.calorieGoal ?? null;
+  });
+
+export const updateCalorieGoalServerFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .inputValidator(z.object({ calorieGoal: z.number().int().min(0).max(10000).nullable() }))
+  .handler(async ({ context, data }: { context: { user: { id: string } }; data: { calorieGoal: number | null } }) => {
+    const prisma = await getServerSidePrismaClient();
+    await prisma.user.update({
+      where: { id: context.user.id },
+      data: { calorieGoal: data.calorieGoal },
+    });
+    return { success: true };
+  });
