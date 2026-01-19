@@ -19,12 +19,12 @@ export const getCurrentWorkoutServerFn = createServerFn()
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
     const prisma = await getServerSidePrismaClient();
-    // Get the most recent workout for the user
     const workout = await prisma.workout.findFirst({
       where: { userId: context.user.id, completedAt: null },
-      orderBy: { id: "desc" },
+      orderBy: { createdAt: "desc" },
       include: {
         sets: {
+          orderBy: { createdAt: "asc" },
           include: { movement: true },
         },
       },
@@ -95,7 +95,6 @@ export const deleteSetServerFn = createServerFn({ method: "POST" })
   .inputValidator(z.object({ setId: z.string() }))
   .handler(async ({ context, data }: { context: { user: { id: string } }; data: { setId: string } }) => {
     const prisma = await getServerSidePrismaClient();
-    // Atomic find-and-delete: only deletes if set belongs to user's active workout
     const result = await prisma.set.deleteMany({
       where: { id: data.setId, workout: { userId: context.user.id, completedAt: null } },
     });
@@ -126,14 +125,8 @@ export const deleteWorkoutsServerFn = createServerFn({ method: "POST" })
   .inputValidator(z.object({ workoutIds: z.array(z.string()) }))
   .handler(async ({ context, data }: { context: { user: { id: string } }; data: { workoutIds: string[] } }) => {
     const prisma = await getServerSidePrismaClient();
-    // Wrap in transaction for atomicity
-    await prisma.$transaction(async (tx) => {
-      await tx.set.deleteMany({
-        where: { workout: { id: { in: data.workoutIds }, userId: context.user.id } },
-      });
-      await tx.workout.deleteMany({
-        where: { id: { in: data.workoutIds }, userId: context.user.id },
-      });
+    await prisma.workout.deleteMany({
+      where: { id: { in: data.workoutIds }, userId: context.user.id },
     });
     return { success: true };
   });
