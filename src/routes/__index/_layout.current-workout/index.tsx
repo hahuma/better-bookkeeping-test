@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,15 +10,16 @@ import {
   addSetServerFn,
   deleteSetServerFn,
 } from "@/lib/workouts.server";
-import { Play, Check, Plus, X } from "lucide-react";
+import { Play, Check, Plus, X, AlertCircle } from "lucide-react";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { currentWorkoutQueryOptions, movementsQueryOptions } from "./-queries/current-workout";
+import { currentWorkoutQueryOptions, movementsQueryOptions, latestWeightQueryOptions } from "./-queries/current-workout";
 
 export const Route = createFileRoute("/__index/_layout/current-workout/")({
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(currentWorkoutQueryOptions()),
       context.queryClient.ensureQueryData(movementsQueryOptions()),
+      context.queryClient.ensureQueryData(latestWeightQueryOptions()),
     ]);
   },
   component: CurrentWorkoutPage,
@@ -28,9 +29,31 @@ function CurrentWorkoutPage() {
   const queryClient = useQueryClient();
   const { data: workout } = useSuspenseQuery(currentWorkoutQueryOptions());
   const { data: movements } = useSuspenseQuery(movementsQueryOptions());
+  const { data: latestWeight } = useSuspenseQuery(latestWeightQueryOptions());
   const [selectedMovement, setSelectedMovement] = useState("");
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
+  const [showWeightPrompt, setShowWeightPrompt] = useState(false);
+
+  const selectedMovementData = movements.find((m) => m.id === selectedMovement);
+  const isBodyWeightMovement = selectedMovementData?.isBodyWeight ?? false;
+
+  const handleMovementChange = (movementId: string) => {
+    setSelectedMovement(movementId);
+    const movement = movements.find((m) => m.id === movementId);
+    if (movement?.isBodyWeight) {
+      if (latestWeight) {
+        setWeight(String(Math.round(latestWeight.weight)));
+        setShowWeightPrompt(false);
+      } else {
+        setWeight("");
+        setShowWeightPrompt(true);
+      }
+    } else {
+      setWeight("");
+      setShowWeightPrompt(false);
+    }
+  };
 
   const createWorkoutMutation = useMutation({
     mutationFn: () => createWorkoutServerFn(),
@@ -111,35 +134,48 @@ function CurrentWorkoutPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={handleAddSet} className="flex gap-2 items-center">
-            <Select value={selectedMovement} onChange={(e) => setSelectedMovement(e.target.value)}>
-              <option value="">Select movement</option>
-              {movements.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </Select>
-            <Input
-              type="number"
-              placeholder="Weight"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              className="w-24"
-              min={0}
-            />
-            <Input
-              type="number"
-              placeholder="Reps"
-              value={reps}
-              onChange={(e) => setReps(e.target.value)}
-              className="w-24"
-              min={1}
-            />
-            <Button type="submit" disabled={!selectedMovement || !reps || !weight} size="sm">
-              <Plus className="w-4 h-4 mr-1" />
-              {addSetMutation.isPending ? "Adding..." : "Add"}
-            </Button>
+          <form onSubmit={handleAddSet} className="space-y-3">
+            <div className="flex gap-2 items-center">
+              <Select value={selectedMovement} onChange={(e) => handleMovementChange(e.target.value)}>
+                <option value="">Select movement</option>
+                {movements.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                type="number"
+                placeholder="Weight"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                className="w-24"
+                min={0}
+              />
+              <Input
+                type="number"
+                placeholder="Reps"
+                value={reps}
+                onChange={(e) => setReps(e.target.value)}
+                className="w-24"
+                min={1}
+              />
+              <Button type="submit" disabled={!selectedMovement || !reps || !weight} size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                {addSetMutation.isPending ? "Adding..." : "Add"}
+              </Button>
+            </div>
+            {showWeightPrompt && isBodyWeightMovement && (
+              <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>
+                  Record your weight to auto-fill body-weight exercises.{" "}
+                  <Link to="/weight" className="underline font-medium">
+                    Record your weight
+                  </Link>
+                </span>
+              </div>
+            )}
           </form>
           {workout.sets.length === 0 ? (
             <p className="text-sm text-slate-500">No sets yet. Add exercises to your workout!</p>

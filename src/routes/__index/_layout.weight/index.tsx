@@ -41,6 +41,7 @@ function WeightPage() {
     mutationFn: (weight: number) => recordWeightServerFn({ data: { weight } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: weightHistoryQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: ["latestWeight"] });
       setWeight("");
     },
   });
@@ -49,6 +50,7 @@ function WeightPage() {
     mutationFn: (entryId: string) => deleteWeightEntryServerFn({ data: { entryId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: weightHistoryQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: ["latestWeight"] });
     },
   });
 

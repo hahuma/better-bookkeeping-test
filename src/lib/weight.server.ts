@@ -87,3 +87,32 @@ export const updateWeightUnitServerFn = createServerFn({ method: "POST" })
     });
     return { success: true };
   });
+
+export const getLatestWeightServerFn = createServerFn()
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const prisma = await getServerSidePrismaClient();
+    const entry = await prisma.weightEntry.findFirst({
+      where: { userId: context.user.id },
+      orderBy: { recordedAt: "desc" },
+    });
+    if (!entry) {
+      return null;
+    }
+    // Return the weight in the user's current unit preference
+    const user = await prisma.user.findUnique({
+      where: { id: context.user.id },
+      select: { weightUnit: true },
+    });
+    const userUnit = user?.weightUnit ?? WeightUnit.lbs;
+    // Convert if needed
+    let weight = entry.weight;
+    if (entry.unit !== userUnit) {
+      if (entry.unit === "lbs" && userUnit === "kg") {
+        weight = Math.round(entry.weight * 0.453592 * 10) / 10;
+      } else if (entry.unit === "kg" && userUnit === "lbs") {
+        weight = Math.round(entry.weight * 2.20462 * 10) / 10;
+      }
+    }
+    return { weight, unit: userUnit };
+  });
