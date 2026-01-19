@@ -14,7 +14,7 @@ export const createFoodEntryServerFn = createServerFn({ method: "POST" })
       protein: z.number().min(0),
       carbs: z.number().min(0),
       fat: z.number().min(0),
-      note: z.string().max(100).optional(),
+      note: z.string().trim().max(100).optional(),
       loggedAt: z.string().datetime().optional(),
     }),
   )

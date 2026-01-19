@@ -10,7 +10,7 @@ export const recordWeightServerFn = createServerFn({ method: "POST" })
     z.object({
       weight: z.number().positive(),
       recordedAt: z.string().datetime().optional(),
-      note: z.string().optional(),
+      note: z.string().trim().optional(),
     }),
   )
   .handler(

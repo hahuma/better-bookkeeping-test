@@ -5,7 +5,7 @@ import { z } from "zod";
 
 export const createMovementServerFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .inputValidator(z.object({ name: z.string().min(1), isBodyWeight: z.boolean().optional() }))
+  .inputValidator(z.object({ name: z.string().trim().min(1), isBodyWeight: z.boolean().optional() }))
   .handler(
     async ({
       context,
@@ -37,7 +37,7 @@ export const updateMovementServerFn = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       id: z.string(),
-      name: z.string().min(1).optional(),
+      name: z.string().trim().min(1).optional(),
       isBodyWeight: z.boolean().optional(),
     }),
   )

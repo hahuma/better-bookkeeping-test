@@ -151,7 +151,7 @@ export const signInServerFn = createServerFn({ method: "POST" })
  * Creates a new user account
  */
 export const createAccountServerFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ email: z.email(), name: z.string().min(1), password: z.string().min(6) }))
+  .inputValidator(z.object({ email: z.email(), name: z.string().trim().min(1), password: z.string().min(6) }))
   .handler(async ({ data }: { data: { email: string; name: string; password: string } }) => {
     const { email, name, password } = data;
 
@@ -203,7 +203,7 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(asyn
  */
 export const updateUserNameServerFn = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .inputValidator(z.object({ name: z.string().min(1).max(100) }))
+  .inputValidator(z.object({ name: z.string().trim().min(1).max(100) }))
   .handler(async ({ context, data }: { context: { user: { id: string } }; data: { name: string } }) => {
     const prisma = await getServerSidePrismaClient();
     await prisma.user.update({
