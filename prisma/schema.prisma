@@ -12,6 +12,13 @@ enum WeightUnit {
   kg
 }
 
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
 model User {
   id            String        @id @default(uuid())
   email         String        @unique
@@ -43,6 +50,7 @@ model Workout {
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
   completedAt DateTime?
   sets        Set[]
 
@@ -57,6 +65,7 @@ model Set {
   movement   Movement @relation(fields: [movementId], references: [id], onDelete: Restrict)
   reps       Int
   weight     Float
+  createdAt  DateTime @default(now())
 
   @@index([workoutId])
   @@index([movementId])
@@ -88,7 +97,7 @@ model FoodEntry {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mealType  String   // breakfast, lunch, dinner, snack
+  mealType  MealType
   calories  Int
   protein   Float
   carbs     Float
