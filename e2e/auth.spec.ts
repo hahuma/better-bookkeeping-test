@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createTestUserCredentials, createTestUser } from "./helpers/auth";
-import { cleanupTestUser, disconnectDb } from "./helpers/db";
+import { cleanupTestUser, clearLoginAttempts, disconnectDb } from "./helpers/db";
 
 async function logout(page: import("@playwright/test").Page) {
   await page.goto("/logout");
@@ -107,6 +107,8 @@ test.describe("Authentication", () => {
     });
 
     test("should reject non-existent email", async ({ page }) => {
+      await clearLoginAttempts("nonexistent@example.com");
+
       await page.goto("/sign-in");
       await page.waitForLoadState("networkidle");
 

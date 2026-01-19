@@ -15,6 +15,11 @@ export function getTestPrismaClient(): PrismaClient {
 export async function cleanupTestUser(email: string): Promise<void> {
   const prisma = getTestPrismaClient();
 
+  // Always clean up login attempts for the email
+  await prisma.loginAttempt.deleteMany({
+    where: { email: email.toLowerCase() },
+  });
+
   const user = await prisma.user.findUnique({
     where: { email },
     include: { workouts: true },
@@ -36,6 +41,10 @@ export async function cleanupTestUser(email: string): Promise<void> {
     where: { userId: user.id },
   });
 
+  await prisma.movement.deleteMany({
+    where: { userId: user.id },
+  });
+
   await prisma.user.delete({
     where: { id: user.id },
   });
@@ -46,6 +55,13 @@ export async function cleanupAllMovements(): Promise<void> {
 
   await prisma.set.deleteMany({});
   await prisma.movement.deleteMany({});
+}
+
+export async function clearLoginAttempts(email: string): Promise<void> {
+  const prisma = getTestPrismaClient();
+  await prisma.loginAttempt.deleteMany({
+    where: { email: email.toLowerCase() },
+  });
 }
 
 export async function disconnectDb(): Promise<void> {
