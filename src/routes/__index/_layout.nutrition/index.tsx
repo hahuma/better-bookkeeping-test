@@ -24,7 +24,7 @@ import {
 
 export const Route = createFileRoute("/__index/_layout/nutrition/")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(foodEntriesQueryOptions());
+    await context.queryClient.ensureQueryData(foodEntriesQueryOptions(context.user.id));
   },
   component: NutritionPage,
 });
@@ -32,8 +32,9 @@ export const Route = createFileRoute("/__index/_layout/nutrition/")({
 type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
 function NutritionPage() {
+  const { user } = Route.useRouteContext();
   const queryClient = useQueryClient();
-  const { data: entries } = useSuspenseQuery(foodEntriesQueryOptions());
+  const { data: entries } = useSuspenseQuery(foodEntriesQueryOptions(user.id));
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   // Form state
@@ -58,7 +59,7 @@ function NutritionPage() {
       loggedAt?: string;
     }) => createFoodEntryServerFn({ data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: foodEntriesQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: foodEntriesQueryOptions(user.id).queryKey });
       resetForm();
     },
   });
@@ -66,7 +67,7 @@ function NutritionPage() {
   const deleteEntryMutation = useMutation({
     mutationFn: (entryId: string) => deleteFoodEntryServerFn({ data: { entryId } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: foodEntriesQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: foodEntriesQueryOptions(user.id).queryKey });
     },
   });
 
@@ -423,6 +424,7 @@ function NutritionPage() {
                     variant="ghost"
                     size="icon"
                     onClick={() => deleteEntryMutation.mutate(entry.id)}
+                    disabled={deleteEntryMutation.isPending}
                     className="h-8 w-8 text-text-muted hover:text-destructive flex-shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />

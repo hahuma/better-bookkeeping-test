@@ -9,15 +9,15 @@ import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { queryOptions } from "@tanstack/react-query";
 import { Check, LogOut } from "lucide-react";
 
-const weightUnitQueryOptions = () =>
+const weightUnitQueryOptions = (userId: string) =>
   queryOptions({
-    queryKey: ["weightUnit"],
+    queryKey: ["weightUnit", userId],
     queryFn: () => getWeightUnitServerFn(),
   });
 
 export const Route = createFileRoute("/__index/_layout/settings/")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(weightUnitQueryOptions());
+    await context.queryClient.ensureQueryData(weightUnitQueryOptions(context.user.id));
   },
   component: SettingsPage,
 });
@@ -26,7 +26,7 @@ function SettingsPage() {
   const router = useRouter();
   const { user } = Route.useRouteContext();
   const queryClient = useQueryClient();
-  const { data: weightUnit } = useSuspenseQuery(weightUnitQueryOptions());
+  const { data: weightUnit } = useSuspenseQuery(weightUnitQueryOptions(user.id));
 
   const [name, setName] = useState(user.name ?? "");
   const [nameSuccess, setNameSuccess] = useState(false);
@@ -43,7 +43,7 @@ function SettingsPage() {
   const updateUnitMutation = useMutation({
     mutationFn: (unit: "lbs" | "kg") => updateWeightUnitServerFn({ data: { unit } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: weightUnitQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: weightUnitQueryOptions(user.id).queryKey });
     },
   });
 
@@ -112,16 +112,18 @@ function SettingsPage() {
               <button
                 type="button"
                 onClick={() => updateUnitMutation.mutate("lbs")}
+                disabled={updateUnitMutation.isPending}
                 data-state={weightUnit === "lbs" ? "on" : "off"}
-                className="px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 data-[state=on]:bg-primary data-[state=on]:text-white data-[state=off]:text-text-muted data-[state=off]:hover:text-text-secondary"
+                className="px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 data-[state=on]:bg-primary data-[state=on]:text-white data-[state=off]:text-text-muted data-[state=off]:hover:text-text-secondary disabled:opacity-50"
               >
                 lbs
               </button>
               <button
                 type="button"
                 onClick={() => updateUnitMutation.mutate("kg")}
+                disabled={updateUnitMutation.isPending}
                 data-state={weightUnit === "kg" ? "on" : "off"}
-                className="px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 data-[state=on]:bg-primary data-[state=on]:text-white data-[state=off]:text-text-muted data-[state=off]:hover:text-text-secondary"
+                className="px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 data-[state=on]:bg-primary data-[state=on]:text-white data-[state=off]:text-text-muted data-[state=off]:hover:text-text-secondary disabled:opacity-50"
               >
                 kg
               </button>

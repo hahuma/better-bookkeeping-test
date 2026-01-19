@@ -20,24 +20,25 @@ function convertWeight(value: number, fromUnit: WeightUnit, toUnit: WeightUnit):
 export const Route = createFileRoute("/__index/_layout/weight/")({
   loader: async ({ context }) => {
     await Promise.all([
-      context.queryClient.ensureQueryData(weightHistoryQueryOptions()),
-      context.queryClient.ensureQueryData(weightUnitQueryOptions()),
+      context.queryClient.ensureQueryData(weightHistoryQueryOptions(context.user.id)),
+      context.queryClient.ensureQueryData(weightUnitQueryOptions(context.user.id)),
     ]);
   },
   component: WeightPage,
 });
 
 function WeightPage() {
+  const { user } = Route.useRouteContext();
   const queryClient = useQueryClient();
-  const { data: entries } = useSuspenseQuery(weightHistoryQueryOptions());
-  const { data: weightUnit } = useSuspenseQuery(weightUnitQueryOptions());
+  const { data: entries } = useSuspenseQuery(weightHistoryQueryOptions(user.id));
+  const { data: weightUnit } = useSuspenseQuery(weightUnitQueryOptions(user.id));
   const [weight, setWeight] = useState("");
 
   const recordWeightMutation = useMutation({
     mutationFn: (weight: number) => recordWeightServerFn({ data: { weight } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: weightHistoryQueryOptions().queryKey });
-      queryClient.invalidateQueries({ queryKey: ["latestWeight"] });
+      queryClient.invalidateQueries({ queryKey: weightHistoryQueryOptions(user.id).queryKey });
+      queryClient.invalidateQueries({ queryKey: ["latestWeight", user.id] });
       setWeight("");
     },
   });
@@ -45,8 +46,8 @@ function WeightPage() {
   const deleteEntryMutation = useMutation({
     mutationFn: (entryId: string) => deleteWeightEntryServerFn({ data: { entryId } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: weightHistoryQueryOptions().queryKey });
-      queryClient.invalidateQueries({ queryKey: ["latestWeight"] });
+      queryClient.invalidateQueries({ queryKey: weightHistoryQueryOptions(user.id).queryKey });
+      queryClient.invalidateQueries({ queryKey: ["latestWeight", user.id] });
     },
   });
 
@@ -185,6 +186,7 @@ function WeightPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => deleteEntryMutation.mutate(entry.id)}
+                          disabled={deleteEntryMutation.isPending}
                           className="h-6 w-6 text-text-muted hover:text-destructive"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
