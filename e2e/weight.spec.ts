@@ -70,7 +70,7 @@ test.describe("Weight Tracking", () => {
 
   test.describe("unit preference", () => {
     test("should show lbs as default unit", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/weight");
+      await authenticatedPage.goto("/settings");
       await authenticatedPage.waitForLoadState("networkidle");
 
       await expect(authenticatedPage.getByRole("button", { name: "lbs" })).toHaveAttribute(
@@ -80,7 +80,7 @@ test.describe("Weight Tracking", () => {
     });
 
     test("should toggle weight unit preference", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/weight");
+      await authenticatedPage.goto("/settings");
       await authenticatedPage.waitForLoadState("networkidle");
 
       // Default is lbs
@@ -99,21 +99,24 @@ test.describe("Weight Tracking", () => {
     });
 
     test("should persist unit preference after recording", async ({ authenticatedPage }) => {
-      await authenticatedPage.goto("/weight");
+      // Switch to kg in settings
+      await authenticatedPage.goto("/settings");
       await authenticatedPage.waitForLoadState("networkidle");
-
-      // Switch to kg
       await authenticatedPage.getByRole("button", { name: "kg" }).click();
       await expect(authenticatedPage.getByRole("button", { name: "kg" })).toHaveAttribute(
         "data-state",
         "on",
       );
 
-      // Record a weight
+      // Go to weight page and record a weight
+      await authenticatedPage.goto("/weight");
+      await authenticatedPage.waitForLoadState("networkidle");
       await authenticatedPage.getByPlaceholder("Enter weight").fill("82");
       await authenticatedPage.getByRole("button", { name: "Record" }).click();
 
-      // Unit should still be kg
+      // Verify unit is still kg in settings
+      await authenticatedPage.goto("/settings");
+      await authenticatedPage.waitForLoadState("networkidle");
       await expect(authenticatedPage.getByRole("button", { name: "kg" })).toHaveAttribute(
         "data-state",
         "on",
@@ -130,26 +133,35 @@ test.describe("Weight Tracking", () => {
     });
 
     test("should convert weight when switching units", async ({ authenticatedPage }) => {
+      // Record weight in lbs (default)
       await authenticatedPage.goto("/weight");
       await authenticatedPage.waitForLoadState("networkidle");
-
-      // Record weight in lbs (default)
       await authenticatedPage.getByPlaceholder("Enter weight").fill("220");
       await authenticatedPage.getByRole("button", { name: "Record" }).click();
       await expect(authenticatedPage.locator("table").getByText("220")).toBeVisible();
 
-      // Switch to kg
+      // Switch to kg in settings
+      await authenticatedPage.goto("/settings");
+      await authenticatedPage.waitForLoadState("networkidle");
       await authenticatedPage.getByRole("button", { name: "kg" }).click();
       await expect(authenticatedPage.getByRole("button", { name: "kg" })).toHaveAttribute(
         "data-state",
         "on",
       );
 
-      // 220 lbs = 99.8 kg (rounded to 1 decimal)
+      // Go back to weight page - 220 lbs = 99.8 kg (rounded to 1 decimal)
+      await authenticatedPage.goto("/weight");
+      await authenticatedPage.waitForLoadState("networkidle");
       await expect(authenticatedPage.locator("table").getByText("99.8")).toBeVisible();
 
-      // Switch back to lbs
+      // Switch back to lbs in settings
+      await authenticatedPage.goto("/settings");
+      await authenticatedPage.waitForLoadState("networkidle");
       await authenticatedPage.getByRole("button", { name: "lbs" }).click();
+
+      // Go back to weight page
+      await authenticatedPage.goto("/weight");
+      await authenticatedPage.waitForLoadState("networkidle");
       await expect(authenticatedPage.locator("table").getByText("220")).toBeVisible();
     });
   });

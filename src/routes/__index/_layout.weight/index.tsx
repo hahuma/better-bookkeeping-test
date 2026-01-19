@@ -3,11 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  recordWeightServerFn,
-  deleteWeightEntryServerFn,
-  updateWeightUnitServerFn,
-} from "@/lib/weight.server";
+import { recordWeightServerFn, deleteWeightEntryServerFn } from "@/lib/weight.server";
 import { Scale, Trash2 } from "lucide-react";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { weightHistoryQueryOptions, weightUnitQueryOptions } from "./-queries/weight";
@@ -54,13 +50,6 @@ function WeightPage() {
     },
   });
 
-  const updateUnitMutation = useMutation({
-    mutationFn: (unit: "lbs" | "kg") => updateWeightUnitServerFn({ data: { unit } }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: weightUnitQueryOptions().queryKey });
-    },
-  });
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = parseFloat(weight);
@@ -80,27 +69,7 @@ function WeightPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl font-semibold text-text-primary">Weight Tracking</h1>
-        <div className="flex gap-0.5 rounded-lg border border-border p-0.5 bg-surface-elevated">
-          <button
-            type="button"
-            onClick={() => updateUnitMutation.mutate("lbs")}
-            data-state={weightUnit === "lbs" ? "on" : "off"}
-            className="px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 data-[state=on]:bg-primary data-[state=on]:text-white data-[state=off]:text-text-muted data-[state=off]:hover:text-text-secondary"
-          >
-            lbs
-          </button>
-          <button
-            type="button"
-            onClick={() => updateUnitMutation.mutate("kg")}
-            data-state={weightUnit === "kg" ? "on" : "off"}
-            className="px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 data-[state=on]:bg-primary data-[state=on]:text-white data-[state=off]:text-text-muted data-[state=off]:hover:text-text-secondary"
-          >
-            kg
-          </button>
-        </div>
-      </div>
+      <h1 className="text-xl font-semibold text-text-primary">Weight Tracking</h1>
 
       <Card>
         <CardHeader>

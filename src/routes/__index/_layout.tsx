@@ -1,6 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect } from "@tanstack/react-router";
-import { Dumbbell, History, BicepsFlexed, Scale, User, LogOut, Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Dumbbell, History, BicepsFlexed, Scale, Settings, User, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/__index/_layout")({
@@ -16,6 +15,7 @@ const navItems = [
   { to: "/workout-history", label: "History", icon: History },
   { to: "/movements", label: "Movements", icon: BicepsFlexed },
   { to: "/weight", label: "Weight", icon: Scale },
+  { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 function RouteComponent() {
@@ -80,20 +80,18 @@ function RouteComponent() {
 
         {/* User Section */}
         <div className="border-t border-border-subtle p-3 flex-shrink-0">
-          <div className="flex items-center gap-3 px-3 py-2">
+          <Link
+            to="/settings"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors"
+          >
             <div className="w-8 h-8 rounded-full bg-surface-elevated border border-border flex items-center justify-center flex-shrink-0">
               <User className="w-4 h-4 text-text-muted" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary truncate">{user.name || user.email}</p>
             </div>
-          </div>
-          <a href="/logout" onClick={() => setMobileMenuOpen(false)}>
-            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 mt-1 text-text-muted hover:text-text-primary">
-              <LogOut className="w-4 h-4" />
-              Sign out
-            </Button>
-          </a>
+          </Link>
         </div>
       </nav>
 

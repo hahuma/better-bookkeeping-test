@@ -197,3 +197,18 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(asyn
     context: { user },
   });
 });
+
+/**
+ * Updates the current user's name
+ */
+export const updateUserNameServerFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .inputValidator(z.object({ name: z.string().min(1).max(100) }))
+  .handler(async ({ context, data }: { context: { user: { id: string } }; data: { name: string } }) => {
+    const prisma = await getServerSidePrismaClient();
+    await prisma.user.update({
+      where: { id: context.user.id },
+      data: { name: data.name },
+    });
+    return { success: true };
+  });
