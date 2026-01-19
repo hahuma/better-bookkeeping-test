@@ -77,6 +77,7 @@ function CurrentWorkoutPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: currentWorkoutQueryOptions().queryKey });
       setReps("");
+      setWeight("");
     },
   });
 
