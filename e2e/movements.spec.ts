@@ -81,12 +81,47 @@ test.describe("Movements", () => {
   });
 
   test.describe("delete", () => {
-    test.skip("should delete an existing movement", async () => {
-      // TODO: Movement delete not implemented in UI
+    test("should delete an existing movement", async ({ authenticatedPage }) => {
+      await authenticatedPage.goto("/movements");
+      await authenticatedPage.waitForLoadState("networkidle");
+
+      // Create a movement to delete
+      const name = uniqueName("ToDelete");
+      await authenticatedPage.getByPlaceholder("Movement name").fill(name);
+      await authenticatedPage.getByRole("button", { name: "Add" }).click();
+      await expect(authenticatedPage.getByText(name)).toBeVisible();
+
+      // Delete the movement
+      const listItem = authenticatedPage.locator("li").filter({ hasText: name });
+      await listItem.getByRole("button", { name: "Delete" }).click();
+
+      // Verify it's removed
+      await expect(authenticatedPage.getByText(name)).not.toBeVisible();
     });
 
-    test.skip("should remove the movement from the list after deletion", async () => {
-      // TODO: Movement delete not implemented in UI
+    test("should not affect other movements when deleting", async ({ authenticatedPage }) => {
+      await authenticatedPage.goto("/movements");
+      await authenticatedPage.waitForLoadState("networkidle");
+
+      // Create two movements
+      const keepName = uniqueName("KeepThis");
+      const deleteName = uniqueName("DeleteThis");
+
+      await authenticatedPage.getByPlaceholder("Movement name").fill(keepName);
+      await authenticatedPage.getByRole("button", { name: "Add" }).click();
+      await expect(authenticatedPage.getByText(keepName)).toBeVisible();
+
+      await authenticatedPage.getByPlaceholder("Movement name").fill(deleteName);
+      await authenticatedPage.getByRole("button", { name: "Add" }).click();
+      await expect(authenticatedPage.getByText(deleteName)).toBeVisible();
+
+      // Delete one movement
+      const listItem = authenticatedPage.locator("li").filter({ hasText: deleteName });
+      await listItem.getByRole("button", { name: "Delete" }).click();
+
+      // Verify correct one is deleted, other remains
+      await expect(authenticatedPage.getByText(deleteName)).not.toBeVisible();
+      await expect(authenticatedPage.getByText(keepName)).toBeVisible();
     });
   });
 });
