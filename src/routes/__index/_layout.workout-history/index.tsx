@@ -6,7 +6,7 @@ import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { deleteWorkoutsServerFn } from "@/lib/workouts.server";
 import { Trash2 } from "lucide-react";
-import { workoutHistoryQueryOptions } from "./-queries/workout-history";
+import { workoutHistoryQueryOptions, weightUnitQueryOptions } from "./-queries/workout-history";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
@@ -18,7 +18,10 @@ import {
 
 export const Route = createFileRoute("/__index/_layout/workout-history/")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(workoutHistoryQueryOptions());
+    await Promise.all([
+      context.queryClient.ensureQueryData(workoutHistoryQueryOptions()),
+      context.queryClient.ensureQueryData(weightUnitQueryOptions()),
+    ]);
   },
   component: WorkoutHistoryPage,
 });
@@ -26,6 +29,7 @@ export const Route = createFileRoute("/__index/_layout/workout-history/")({
 function WorkoutHistoryPage() {
   const queryClient = useQueryClient();
   const { data: workouts } = useSuspenseQuery(workoutHistoryQueryOptions());
+  const { data: weightUnit } = useSuspenseQuery(weightUnitQueryOptions());
   const [selectedWorkouts, setSelectedWorkouts] = useState<Set<string>>(new Set());
   const [selectedMovement, setSelectedMovement] = useState<string>("all");
   const [selectedMetric, setSelectedMetric] = useState<ProgressionMetric>("max_weight");
@@ -252,12 +256,13 @@ function WorkoutHistoryPage() {
                           return (
                             <td key={movementId} className="py-2.5 px-3 text-right text-xs">
                               <span className="text-primary font-mono">{maxWeight}</span>
-                              <span className="text-text-muted"> / </span>
-                              <span className="font-mono">{avgReps}</span>
-                              <span className="text-text-muted">r</span>
-                              <span className="text-text-muted"> / </span>
-                              <span className="font-mono">{numSets}</span>
-                              <span className="text-text-muted">s</span>
+                              <span className="text-text-secondary ml-0.5">{weightUnit}</span>
+                              <span className="text-text-muted mx-1">·</span>
+                              <span className="font-mono text-text-primary">{avgReps}</span>
+                              <span className="text-text-secondary ml-0.5">reps</span>
+                              <span className="text-text-muted mx-1">·</span>
+                              <span className="font-mono text-text-primary">{numSets}</span>
+                              <span className="text-text-secondary ml-0.5">sets</span>
                             </td>
                           );
                         })}

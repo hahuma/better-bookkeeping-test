@@ -148,7 +148,9 @@ test.describe("Body-weight Movements", () => {
       await authenticatedPage.getByPlaceholder("Reps").fill("8");
       await authenticatedPage.getByRole("button", { name: "Add" }).click();
 
-      await expect(authenticatedPage.getByText("8 reps × 200 lbs")).toBeVisible();
+      // New format: "200 lbs · 8 reps"
+      await expect(authenticatedPage.getByText("8 reps")).toBeVisible();
+      await expect(authenticatedPage.getByText("200")).toBeVisible();
     });
 
     test("should not auto-fill weight for regular movement", async ({ authenticatedPage }) => {

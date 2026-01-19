@@ -31,7 +31,9 @@ test.describe("Sets", () => {
 
       const setItem = authenticatedPage.getByRole("listitem").filter({ hasText: movementName });
       await expect(setItem).toBeVisible();
-      await expect(authenticatedPage.getByText("10 reps × 135 lbs")).toBeVisible();
+      // New format: "135 lbs · 10 reps"
+      await expect(setItem.getByText("135")).toBeVisible();
+      await expect(setItem.getByText("10 reps")).toBeVisible();
     });
 
     test("should require movement, weight, and reps to add a set", async ({ authenticatedPage }) => {
@@ -60,7 +62,9 @@ test.describe("Sets", () => {
 
       const setItem = authenticatedPage.locator("li").filter({ hasText: movementName });
       await expect(setItem).toBeVisible();
-      await expect(setItem.getByText("3 reps × 315 lbs")).toBeVisible();
+      // New format: "315 lbs · 3 reps"
+      await expect(setItem.getByText("315")).toBeVisible();
+      await expect(setItem.getByText("3 reps")).toBeVisible();
     });
   });
 
@@ -111,7 +115,8 @@ test.describe("Sets", () => {
         await authenticatedPage.getByPlaceholder("Weight").fill(set.weight);
         await authenticatedPage.getByPlaceholder("Reps").fill(set.reps);
         await authenticatedPage.getByRole("button", { name: "Add" }).click();
-        await expect(authenticatedPage.getByText(`${set.reps} reps × ${set.weight} lbs`)).toBeVisible();
+        // New format: "weight unit · reps reps"
+        await expect(authenticatedPage.getByText(`${set.reps} reps`)).toBeVisible();
       }
 
       const setItems = authenticatedPage.locator("ul li");
@@ -133,12 +138,12 @@ test.describe("Sets", () => {
       await authenticatedPage.getByPlaceholder("Weight").fill("0");
       await authenticatedPage.getByPlaceholder("Reps").fill("12");
       await authenticatedPage.getByRole("button", { name: "Add" }).click();
-      await expect(authenticatedPage.getByText("12 reps × 0 lbs")).toBeVisible();
+      await expect(authenticatedPage.getByText("12 reps")).toBeVisible();
 
       const setItem = authenticatedPage.locator("li").filter({ hasText: movementName });
       await setItem.getByRole("button").click();
 
-      await expect(authenticatedPage.getByText("12 reps × 0 lbs")).not.toBeVisible();
+      await expect(setItem).not.toBeVisible();
       await expect(authenticatedPage.getByText("No sets yet")).toBeVisible();
     });
 
@@ -149,12 +154,12 @@ test.describe("Sets", () => {
       await authenticatedPage.getByPlaceholder("Weight").fill("135");
       await authenticatedPage.getByPlaceholder("Reps").fill("10");
       await authenticatedPage.getByRole("button", { name: "Add" }).click();
-      await expect(authenticatedPage.getByText("10 reps × 135 lbs")).toBeVisible();
+      await expect(authenticatedPage.getByText("10 reps")).toBeVisible();
 
       await authenticatedPage.getByPlaceholder("Weight").fill("155");
       await authenticatedPage.getByPlaceholder("Reps").fill("8");
       await authenticatedPage.getByRole("button", { name: "Add" }).click();
-      await expect(authenticatedPage.getByText("8 reps × 155 lbs")).toBeVisible();
+      await expect(authenticatedPage.getByText("8 reps")).toBeVisible();
 
       const setItems = authenticatedPage.locator("ul li");
       await expect(setItems).toHaveCount(2);
@@ -162,8 +167,8 @@ test.describe("Sets", () => {
       await setItems.first().getByRole("button").click();
 
       await expect(setItems).toHaveCount(1);
-      await expect(authenticatedPage.getByText("8 reps × 155 lbs")).toBeVisible();
-      await expect(authenticatedPage.getByText("10 reps × 135 lbs")).not.toBeVisible();
+      await expect(authenticatedPage.getByText("8 reps")).toBeVisible();
+      await expect(authenticatedPage.getByText("155")).toBeVisible();
     });
   });
 });

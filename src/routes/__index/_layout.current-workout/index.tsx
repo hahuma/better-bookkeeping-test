@@ -12,7 +12,7 @@ import {
 } from "@/lib/workouts.server";
 import { Play, Check, Plus, X, AlertCircle, Dumbbell } from "lucide-react";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { currentWorkoutQueryOptions, movementsQueryOptions, latestWeightQueryOptions } from "./-queries/current-workout";
+import { currentWorkoutQueryOptions, movementsQueryOptions, latestWeightQueryOptions, weightUnitQueryOptions } from "./-queries/current-workout";
 
 export const Route = createFileRoute("/__index/_layout/current-workout/")({
   loader: async ({ context }) => {
@@ -20,6 +20,7 @@ export const Route = createFileRoute("/__index/_layout/current-workout/")({
       context.queryClient.ensureQueryData(currentWorkoutQueryOptions()),
       context.queryClient.ensureQueryData(movementsQueryOptions()),
       context.queryClient.ensureQueryData(latestWeightQueryOptions()),
+      context.queryClient.ensureQueryData(weightUnitQueryOptions()),
     ]);
   },
   component: CurrentWorkoutPage,
@@ -30,6 +31,7 @@ function CurrentWorkoutPage() {
   const { data: workout } = useSuspenseQuery(currentWorkoutQueryOptions());
   const { data: movements } = useSuspenseQuery(movementsQueryOptions());
   const { data: latestWeight } = useSuspenseQuery(latestWeightQueryOptions());
+  const { data: weightUnit } = useSuspenseQuery(weightUnitQueryOptions());
   const [selectedMovement, setSelectedMovement] = useState("");
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
@@ -139,7 +141,13 @@ function CurrentWorkoutPage() {
           <h1 className="text-xl font-semibold text-text-primary">Current Workout</h1>
           <p className="text-sm text-text-muted mt-0.5">{formattedDate}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => completeWorkoutMutation.mutate()}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => completeWorkoutMutation.mutate()}
+          disabled={workout.sets.length === 0}
+          title={workout.sets.length === 0 ? "Add at least one set to complete workout" : undefined}
+        >
           <Check className="w-4 h-4" />
           {completeWorkoutMutation.isPending ? "Completing..." : "Complete Workout"}
         </Button>
@@ -166,7 +174,7 @@ function CurrentWorkoutPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-text-muted mb-1.5">Weight</label>
+                <label className="block text-xs text-text-muted mb-1.5">Weight ({weightUnit})</label>
                 <Input
                   type="number"
                   placeholder="Weight"
@@ -238,8 +246,8 @@ function CurrentWorkoutPage() {
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-text-primary truncate">{set.movement.name}</p>
-                    <p className="text-xs text-text-muted">
-                      {set.reps} reps × {set.weight} lbs
+                    <p className="text-xs text-text-secondary">
+                      <span className="font-mono">{set.weight}</span> {weightUnit} · <span className="font-mono">{set.reps}</span> reps
                     </p>
                   </div>
 
