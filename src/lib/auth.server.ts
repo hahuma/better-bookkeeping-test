@@ -18,30 +18,43 @@ function getCookieSecret(): string {
 
 const COOKIE_SECRET = getCookieSecret();
 
+const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 /**
- * Signs a user ID to create a tamper-proof session token
+ * Creates a tamper-proof session token with embedded expiry
+ * Token format: userId.expiresAt.signature
  */
-function signUserId(userId: string): string {
-  const signature = crypto.createHmac("sha256", COOKIE_SECRET).update(userId).digest("hex");
-  return `${userId}.${signature}`;
+function createSessionToken(userId: string, expiresAt: Date): string {
+  const expiresAtUnix = Math.floor(expiresAt.getTime() / 1000);
+  const payload = `${userId}.${expiresAtUnix}`;
+  const signature = crypto.createHmac("sha256", COOKIE_SECRET).update(payload).digest("hex");
+  return `${payload}.${signature}`;
 }
 
 /**
- * Verifies a signed session token and returns the user ID if valid
+ * Verifies a session token and returns the user ID if valid and not expired
  * Uses timing-safe comparison to prevent timing attacks
  */
 function verifySessionToken(token: string): string | null {
-  const [userId, signature] = token.split(".");
-  if (!userId || !signature) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
 
-  const expectedSignature = crypto.createHmac("sha256", COOKIE_SECRET).update(userId).digest("hex");
+  const [userId, expiresAtStr, signature] = parts;
+  if (!userId || !expiresAtStr || !signature) return null;
 
-  // Use timing-safe comparison to prevent timing attacks
+  // Verify signature
+  const payload = `${userId}.${expiresAtStr}`;
+  const expectedSignature = crypto.createHmac("sha256", COOKIE_SECRET).update(payload).digest("hex");
+
   const signatureBuffer = Buffer.from(signature, "hex");
   const expectedBuffer = Buffer.from(expectedSignature, "hex");
 
   if (signatureBuffer.length !== expectedBuffer.length) return null;
   if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
+
+  // Verify expiry
+  const expiresAt = parseInt(expiresAtStr, 10) * 1000;
+  if (isNaN(expiresAt) || Date.now() > expiresAt) return null;
 
   return userId;
 }
@@ -50,8 +63,8 @@ function verifySessionToken(token: string): string | null {
  * Sets the session cookie for a user (internal use only)
  */
 function setSessionCookie(userId: string) {
-  const token = signUserId(userId);
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+  const token = createSessionToken(userId, expiresAt);
 
   setCookie(sessionCookieName, token, {
     httpOnly: true,
