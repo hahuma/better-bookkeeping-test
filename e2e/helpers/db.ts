@@ -20,34 +20,14 @@ export async function cleanupTestUser(email: string): Promise<void> {
     where: { email: email.toLowerCase() },
   });
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: { workouts: true },
-  });
-
+  const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return;
 
-  for (const workout of user.workouts) {
-    await prisma.set.deleteMany({
-      where: { workoutId: workout.id },
-    });
-  }
+  // Delete sets first to satisfy Movement's onDelete: Restrict constraint
+  await prisma.set.deleteMany({ where: { movement: { userId: user.id } } });
 
-  await prisma.workout.deleteMany({
-    where: { userId: user.id },
-  });
-
-  await prisma.weightEntry.deleteMany({
-    where: { userId: user.id },
-  });
-
-  await prisma.movement.deleteMany({
-    where: { userId: user.id },
-  });
-
-  await prisma.user.delete({
-    where: { id: user.id },
-  });
+  // Now delete user - cascades handle workouts, movements, weightEntries
+  await prisma.user.delete({ where: { id: user.id } });
 }
 
 export async function cleanupAllMovements(): Promise<void> {

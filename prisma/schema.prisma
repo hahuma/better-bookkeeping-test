@@ -28,7 +28,7 @@ model User {
 model Movement {
   id           String  @id @default(uuid())
   userId       String
-  user         User    @relation(fields: [userId], references: [id])
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   name         String
   isBodyWeight Boolean @default(false)
   sets         Set[]
@@ -38,26 +38,31 @@ model Movement {
 
 model Workout {
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   id          String    @id @default(uuid())
   completedAt DateTime?
   sets        Set[]
+
+  @@index([userId])
 }
 
 model Set {
   id         String   @id @default(uuid())
   workoutId  String
-  workout    Workout  @relation(fields: [workoutId], references: [id])
+  workout    Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   movementId String
-  movement   Movement @relation(fields: [movementId], references: [id])
+  movement   Movement @relation(fields: [movementId], references: [id], onDelete: Restrict)
   reps       Int
   weight     Int
+
+  @@index([workoutId])
+  @@index([movementId])
 }
 
 model WeightEntry {
   id         String     @id @default(uuid())
   userId     String
-  user       User       @relation(fields: [userId], references: [id])
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   weight     Float
   unit       WeightUnit @default(lbs)
   recordedAt DateTime   @default(now())

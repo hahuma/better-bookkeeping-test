@@ -66,6 +66,10 @@ export const deleteMovementServerFn = createServerFn({ method: "POST" })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ context, data }: { context: { user: { id: string } }; data: { id: string } }) => {
     const prisma = await getServerSidePrismaClient();
+    const setsCount = await prisma.set.count({ where: { movementId: data.id } });
+    if (setsCount > 0) {
+      return { success: false, error: "Cannot delete movement with existing sets" };
+    }
     await prisma.movement.delete({
       where: { id: data.id, userId: context.user.id },
     });
