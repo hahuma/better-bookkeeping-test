@@ -23,6 +23,7 @@ model User {
   workouts      Workout[]
   weightEntries WeightEntry[]
   movements     Movement[]
+  foodEntries   FoodEntry[]
 }
 
 model Movement {
@@ -79,4 +80,19 @@ model LoginAttempt {
   updatedAt DateTime @updatedAt
 
   @@index([email])
+}
+
+model FoodEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealType  String   // breakfast, lunch, dinner, snack
+  calories  Int
+  protein   Float
+  carbs     Float
+  fat       Float
+  note      String?
+  loggedAt  DateTime @default(now())
+
+  @@index([userId, loggedAt])
 }

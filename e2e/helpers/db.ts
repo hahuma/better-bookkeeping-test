@@ -26,6 +26,9 @@ export async function cleanupTestUser(email: string): Promise<void> {
   // Delete sets first to satisfy Movement's onDelete: Restrict constraint
   await prisma.set.deleteMany({ where: { movement: { userId: user.id } } });
 
+  // Delete food entries (before user cascade)
+  await prisma.foodEntry.deleteMany({ where: { userId: user.id } });
+
   // Now delete user - cascades handle workouts, movements, weightEntries
   await prisma.user.delete({ where: { id: user.id } });
 }
